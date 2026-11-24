@@ -68,7 +68,7 @@ public class ProductoForm extends JFrame {
 
     private final DefaultTableModel modeloHistorial =
             new DefaultTableModel(
-                    new String[]{"ID", "Fecha", "Estado", "Total"}, 0) {
+                    new String[]{"ID", "Fecha", "Total"}, 0) {
 
         @Override
         public boolean isCellEditable(int fila, int columna) {
@@ -753,10 +753,7 @@ private JPanel crearPanelHistorial() {
 
         tabla.clearSelection();
     }
-
-    // ==========================================
     // CARGAR CATEGORÍAS Y SUCURSALES
-    // ==========================================
 
     private void cargarCategorias() {
 
@@ -1061,7 +1058,6 @@ private JPanel crearPanelHistorial() {
                 modeloHistorial.addRow(new Object[]{
                     pedido.getId(),
                     pedido.getFecha(),
-                    pedido.getEstado(),
                     pedido.getTotal()
                 });
             }
