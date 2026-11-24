@@ -949,96 +949,108 @@ private JPanel crearPanelHistorial() {
         calcularTotalPedido();
     }
 
-    private void guardarPedido() {
+private void guardarPedido() {
 
-        if (modeloDetalles.getRowCount() == 0) {
-            mensajeError("Agrega al menos un producto al pedido.");
-            return;
-        }
+    if (modeloDetalles.getRowCount() == 0) {
+        mensajeError("Agrega al menos un producto al pedido.");
+        return;
+    }
 
-        try (Session sesion = HibernateUtil
-                .getSessionFactory().openSession()) {
+    try (Session sesion = HibernateUtil
+            .getSessionFactory().openSession()) {
 
-            Transaction tx = sesion.beginTransaction();
+        Transaction tx = sesion.beginTransaction();
 
-            try {
+        try {
 
-                double total = Double.parseDouble(
-                        txtTotalPedido.getText());
+            double total = Double.parseDouble(
+                    txtTotalPedido.getText());
 
-                // Registrar cada detalle del pedido
-                for (int i = 0; i < modeloDetalles.getRowCount(); i++) {
+            // Crear el pedido principal
+            Pedido pedido = new Pedido(
+                    java.time.LocalDate.now(), total);
 
-                    Long idProducto =
-                            productosDetalles.get(i).getId();
+            sesion.persist(pedido);
 
-                    Producto producto = sesion.find(
-                            Producto.class, idProducto);
+            // Registrar los productos del pedido
+            for (int i = 0; i < modeloDetalles.getRowCount(); i++) {
 
-                    if (producto == null) {
-                        throw new IllegalArgumentException(
-                                "Uno de los productos ya no existe.");
-                    }
+                Long idProducto = productosDetalles.get(i).getId();
 
-                    int cantidad = Integer.parseInt(
-                            modeloDetalles.getValueAt(i, 2).toString());
+                Producto producto = sesion.find(
+                        Producto.class, idProducto);
 
-                    double subtotal = Double.parseDouble(
-                            modeloDetalles.getValueAt(i, 3).toString());
+                if (producto == null) {
+                    throw new IllegalArgumentException(
+                            "Uno de los productos ya no existe.");
+                }
 
-                    // Verificar stock acumulado
-                    int cantidadAcumulada = 0;
+                int cantidad = Integer.parseInt(
+                        modeloDetalles.getValueAt(i, 2).toString());
 
-                    for (int j = 0;
-                            j < modeloDetalles.getRowCount(); j++) {
+                double subtotal = Double.parseDouble(
+                        modeloDetalles.getValueAt(i, 3).toString());
 
-                        if (productosDetalles.get(j).getId()
-                                .equals(idProducto)) {
+                // Verificar stock acumulado
+                int cantidadAcumulada = 0;
 
-                            cantidadAcumulada += Integer.parseInt(
-                                    modeloDetalles.getValueAt(j, 2).toString());
-                        }
-                    }
+                for (int j = 0; j < modeloDetalles.getRowCount(); j++) {
 
-                    if (cantidadAcumulada > producto.getStock()) {
-                        throw new IllegalArgumentException(
-                                "El stock de " + producto.getNombre()
-                                + " ya no es suficiente.");
+                    if (productosDetalles.get(j).getId()
+                            .equals(idProducto)) {
+
+                        cantidadAcumulada += Integer.parseInt(
+                                modeloDetalles.getValueAt(j, 2).toString());
                     }
                 }
 
-                tx.commit();
-
-                // Limpiar el formulario
-                modeloDetalles.setRowCount(0);
-                productosDetalles.clear();
-
-                txtTotalPedido.setText("");
-                txtCantidadPedido.setText("");
-                txtSubtotalPedido.setText("");
-
-                // Actualizar historial
-                cargarHistorialPedidos();
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Pedido registrado correctamente.");
-
-            } catch (Exception ex) {
-
-                if (tx.isActive()) {
-                    tx.rollback();
+                if (cantidadAcumulada > producto.getStock()) {
+                    throw new IllegalArgumentException(
+                            "El stock de " + producto.getNombre()
+                            + " ya no es suficiente.");
                 }
 
-                throw ex;
+                // Crear y guardar el detalle
+                DetallePedido detalle = new DetallePedido(
+                        cantidad, subtotal, pedido, producto);
+
+                pedido.getDetalles().add(detalle);
+
+                sesion.persist(detalle);
             }
+
+            // Confirmar el registro del pedido y sus detalles
+            tx.commit();
+
+            // Limpiar el formulario
+            modeloDetalles.setRowCount(0);
+            productosDetalles.clear();
+
+            txtTotalPedido.setText("");
+            txtCantidadPedido.setText("");
+            txtSubtotalPedido.setText("");
+
+            // Actualizar el historial
+            cargarHistorialPedidos();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Pedido registrado correctamente.");
 
         } catch (Exception ex) {
 
-            mensajeError(ex.getMessage());
-        }
-    }
+            if (tx.isActive()) {
+                tx.rollback();
+            }
 
+            throw ex;
+        }
+
+    } catch (Exception ex) {
+
+        mensajeError(ex.getMessage());
+    }
+}
     // MÉTODOS DEL HISTORIAL
 
     private void cargarHistorialPedidos() {
