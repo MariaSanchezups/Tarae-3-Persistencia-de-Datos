@@ -19,7 +19,6 @@ public class Pedido {
 
     private LocalDate fecha;
     private double total;
-    private String estado;
 
     @OneToMany(mappedBy = "pedido")
     private List<DetallePedido> detalles = new ArrayList<>();
@@ -27,10 +26,9 @@ public class Pedido {
     public Pedido() {
     }
 
-    public Pedido(LocalDate fecha, double total, String estado) {
+    public Pedido(LocalDate fecha, double total) {
         this.fecha = fecha;
         this.total = total;
-        this.estado = estado;
     }
 
     public Long getId() {
@@ -51,14 +49,6 @@ public class Pedido {
 
     public void setTotal(double total) {
         this.total = total;
-    }
-
-    public String getEstado() {
-        return estado;
-    }
-
-    public void setEstado(String estado) {
-        this.estado = estado;
     }
 
     public List<DetallePedido> getDetalles() {
